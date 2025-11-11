@@ -20,14 +20,7 @@ tar --owner=0 --group=0 -czf "${creation_dir}/control.tar.gz" -C "${control_crea
 # Create data tar
 
 data_creation_dir="$(mktemp -d)"
-bin_dir="${data_creation_dir}/usr/bin/"
-mkdir -p "${bin_dir}"
-
-mkdir -p "${data_creation_dir}/usr/share/git-hash-select/bindings/"
-cp bindings/* "${data_creation_dir}/usr/share/git-hash-select/bindings/"
-
-install git-hash-select.sh "${bin_dir}/git-hash-select"
-sed -Eie "s/GIT_HASH_SELECT_VERSION=.*/GIT_HASH_SELECT_VERSION=\"${version}\"/" "${bin_dir}/git-hash-select"
+./install.sh "${data_creation_dir}"
 
 tar --owner=0 --group=0 -czf "${creation_dir}/data.tar.gz" -C "${data_creation_dir}/" .
 
