@@ -1,0 +1,9 @@
+Package: git-hash-select
+Version: PLACEHOLDER
+Section: vcs
+Priority: optional
+Architecture: all
+Maintainer: Roddy Rappaport <roddy.rappaport@gmail.com>
+Description: A hash selector utility for bash with optional shell bindings.
+Depends: git, fzf, util-linux
+Recommends: xclip
