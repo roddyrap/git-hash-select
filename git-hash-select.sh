@@ -78,8 +78,12 @@ git_hash_select_copy()
 			return 1
 		fi
 	else
-		echo "fatal: Copying to wayland is not supported" > "${stderr_file}"
-		return 1
+		if which wl-copy > /dev/null 2> /dev/null; then
+			echo -n "${chosen_commit_hash}" | wl-copy
+		else
+			echo "fatal: command should copy to clipboard but wl-clipboard isn't installed" > "${stderr_file}"
+			return 1
+		fi
 	fi
 
 	return 0
