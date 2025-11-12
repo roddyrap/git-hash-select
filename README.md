@@ -21,7 +21,7 @@ The most useful feature of the `git hash-select` package is the optional shell b
 The package comes with an optional shell binding that can be sourced for increased productivity.
 Pressing Ctrl+g when in a git repository will open an inline version of the commit picker, inserting the hash directly into the line.
 
-The supported shells are: Bash, Zshell and Dash.
+The supported shells are: Bash, Zshell, Fish and Dash.
 
 Using the bindings:
 
