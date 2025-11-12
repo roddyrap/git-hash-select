@@ -7,4 +7,4 @@ function inline_git_hash_select
 }
 
 zle -N inline_git_hash_select
-bindkey "${GIT_HASH_KEY:-"\\C-g"}" inline_git_hash_select
+bindkey "${GIT_HASH_SELECT_KEY:-"\\C-g"}" inline_git_hash_select
