@@ -2,19 +2,32 @@
 
 GIT_HASH_SELECT_VERSION="Development"
 
+check_dependencies_exist()
+{
+	local stderr_file="${1}"
+	shift 1
+
+	for dependency in "${@}"; do
+		if ! which "${dependency}" > /dev/null 2>&1; then
+			echo "fatal: "${dependency}" is not installed" > "${stderr_file}"
+			return 1
+		fi
+	done
+}
+
 # Get hashes of previous commits to clipboard. Useful for git commit --fixup.
 __internal_git_hash__()
 {
 	local OPTIND
 
-	# Parse command line arguments (Only quiet fail flag right now).
-	local quiet=""
+	# Parse command line arguments.
+	local stderr_file="/proc/self/fd/2"
 	local should_fzf_preview="yes"
 	local show_color="yes"
 
 	while getopts 'qPC' flag; do
 		case $flag in
-			q) quiet="true" ;;
+			q) stderr_file="/dev/null" ;;
 			C) unset show_color ;;
 			P) unset should_fzf_preview ;;
 			*) return 129   ;;
@@ -34,12 +47,8 @@ __internal_git_hash__()
 
 	# Check if inside git, write an error and quit if not.
 	local is_git_response="$(git rev-parse --is-inside-work-tree 2>&1)"
-
 	if [ "${is_git_response}" != "true" ]; then
-		if [ -z "${quiet}" ]; then
-			# Copy pasted the error print from git-status.
-			echo "fatal: not a git repository (or any of the parent directories): .git" >&2
-		fi
+		echo "${is_git_response}" > "${stderr_file}"
 
 		# git-status and git-commit return 128 when the user isn't in a git repo.
 		return 128
@@ -47,16 +56,13 @@ __internal_git_hash__()
 
 	# Check that there is at least one commit.
 	if ! git show HEAD > /dev/null 2>&1; then
-		if [ -z "${quiet}" ]; then
-			echo "fatal: can't show current commit. Ensure HEAD is a valid commit" >&2
-		fi
+		echo "fatal: can't show current commit. Ensure HEAD is a valid commit" > "${stderr_file}"
 
 		return 128
 	fi
 
 	# It's important that we set a specific format, because we depend on it when extracting the commit hash.
-	local commit_logs="$(git log ${git_color_flag} --format="<%Cgreen%an%Creset> %s %Cblue%h%Creset")"
-	local chosen_commit_log="$(echo "${commit_logs}" | fzf --tiebreak=index ${fzf_color_flag} ${fzf_preview_command:+--preview="${fzf_preview_command}"})"
+	local chosen_commit_log="$(git log ${git_color_flag} --format="<%Cgreen%an%Creset> %s %Cblue%h%Creset" | fzf --tiebreak=index ${fzf_color_flag} ${fzf_preview_command:+--preview="${fzf_preview_command}"})"
 
 	# The hash is the last word in the known log format.
 	local chosen_commit_hash="${chosen_commit_log##* }"
@@ -69,7 +75,6 @@ git_hash_select_copy()
 	local chosen_commit_hash="${1}"
 	local stderr_file="${2}"
 
-	# TODO: Add Wayland support in anticipation for Ubuntu 24.04
 	if [ "${XDG_SESSION_TYPE}" != "wayland" ]; then
 		if which xclip > /dev/null 2> /dev/null; then
 			echo -n "${chosen_commit_hash}" | xclip -selection clipboard
@@ -91,7 +96,7 @@ git_hash_select_copy()
 
 print_git_hash_select_help()
 {
-	echo "Usage: ${0} [options ...]"
+	echo "Usage: git hash-select [options ...]"
 	echo
 	echo "-h,--help       	Display this help message"
 	echo "-v,--version    	Display the program's version"
@@ -105,7 +110,7 @@ print_git_hash_select_help()
 
 git_hash_select()
 {
-	local OPTIND
+	local OPTIND parsed_opts
 
 	parsed_opts=$(getopt -o "hvqPC" -l "help,version,no-color,no-copy,no-print,no-preview,inline,quiet" -- "${@}")
 	if [ $? -ne 0 ]; then
@@ -125,7 +130,7 @@ git_hash_select()
 	while true; do
 		case "$1" in
 		-h|--help)       print_git_hash_select_help; exit 0;;
-		-v|--version)    echo "git-hash-select version: ${GIT_HASH_SELECT_VERSION}"; exit 0;;
+		-v|--version)    echo "git hash-select version: ${GIT_HASH_SELECT_VERSION}"; exit 0;;
 		--no-copy)       unset should_copy_clipboard;  shift;;
 		--no-print)      unset should_print; shift;;
 		-C|--no-color)   internal_git_hash_flags="${internal_git_hash_flags} -C"; shift;;
@@ -136,6 +141,10 @@ git_hash_select()
 		*)               echo "Unexpected option: $1" >&2; exit 1 ;;
 		esac
 	done
+
+	if ! check_dependencies_exist "${stderr_file}" git fzf; then
+		return 1
+	fi
 
 	# Preserve the exit code of the internal git hash when exiting.
 	local chosen_commit_hash
