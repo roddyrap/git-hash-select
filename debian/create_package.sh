@@ -20,7 +20,8 @@ tar --owner=0 --group=0 -czf "${creation_dir}/control.tar.gz" -C "${control_crea
 # Create data tar
 
 data_creation_dir="$(mktemp -d)"
-./install.sh "${data_creation_dir}"
+mkdir "${data_creation_dir}/usr/"
+./install.sh "${data_creation_dir}/usr/"
 
 tar --owner=0 --group=0 -czf "${creation_dir}/data.tar.gz" -C "${data_creation_dir}/" .
 
