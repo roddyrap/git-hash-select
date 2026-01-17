@@ -39,6 +39,7 @@ The binding is configurable, with options being togglable by modifying environme
 GIT_HASH_SELECT_KEY # If set then overrides the default key binding ("\\C-g", Ctrl+g)
 GIT_HASH_SELECT_NO_COLOR # If set when sourcing then color is disabled in selector.
 GIT_HASH_SELECT_NO_PREVIEW # If set when sourcing then the commit preview window is turned off.
+GIT_HASH_SELECT_REFLOG_KEY # If set when sourcing that an additional binding for the reflog is done for the specified key.
 ```
 
 ## Installation

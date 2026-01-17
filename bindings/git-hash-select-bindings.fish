@@ -9,7 +9,7 @@ function inline_git_hash_select
         set hash_select_flags $hash_select_flags --no-preview
     end
 
-    set -l commit_hash (git hash-select --inline --quiet --no-copy $hash_select_flags)
+    set -l commit_hash (git hash-select $argv --inline --quiet --no-copy $hash_select_flags)
     commandline -i "$commit_hash"
 end
 
@@ -18,3 +18,7 @@ if ! string length -q -- $GIT_HASH_SELECT_KEY
 end
 
 bind $GIT_HASH_SELECT_KEY inline_git_hash_select
+
+if string length -q -- $GIT_HASH_SELECT_REFLOG_KEY
+    bind -- $GIT_HASH_SELECT_REFLOG_KEY 'inline_git_hash_select --reflog'
+end

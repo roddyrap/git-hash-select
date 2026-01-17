@@ -24,12 +24,14 @@ __internal_git_hash__()
 	local stderr_file="/proc/self/fd/2"
 	local should_fzf_preview="yes"
 	local show_color="yes"
+	local git_reflog_flag=""
 
-	while getopts 'qPC' flag; do
+	while getopts 'qgPC' flag; do
 		case $flag in
 			q) stderr_file="/dev/null" ;;
 			C) unset show_color ;;
 			P) unset should_fzf_preview ;;
+			g) git_reflog_flag="-g" ;;
 			*) return 129   ;;
 		esac
 	done
@@ -62,7 +64,7 @@ __internal_git_hash__()
 	fi
 
 	# It's important that we set a specific format, because we depend on it when extracting the commit hash.
-	local chosen_commit_log="$(git log ${git_color_flag} --format="<%Cgreen%an%Creset> %s %Cblue%h%Creset" | fzf --tiebreak=index ${fzf_color_flag} ${fzf_preview_command:+--preview="${fzf_preview_command}"})"
+	local chosen_commit_log="$(git log ${git_color_flag} ${git_reflog_flag} --format="<%Cgreen%an%Creset> %s %Cblue%h%Creset" | fzf --tiebreak=index ${fzf_color_flag} ${fzf_preview_command:+--preview="${fzf_preview_command}"})"
 
 	# The hash is the last word in the known log format.
 	local chosen_commit_hash="${chosen_commit_log##* }"
@@ -104,6 +106,7 @@ print_git_hash_select_help()
 	echo "--no-print      	Do not print the resulting hash to console (stdout)"
 	echo "-C,--no-color   	Don't show colors in the commit picker and preview"
 	echo "-P,--no-preview 	Don't show the commit information window"
+	echo "-r,--reflog     	Show the reflog (Previous commits moved to) instead of the git tree"
 	echo "--inline        	Don't emit a newline after the commit hash when printing"
 	echo "-q,--quiet      	Don't print error messages"
 }
@@ -112,7 +115,7 @@ git_hash_select()
 {
 	local OPTIND parsed_opts
 
-	parsed_opts=$(getopt -o "hvqPC" -l "help,version,no-color,no-copy,no-print,no-preview,inline,quiet" -- "${@}")
+	parsed_opts=$(getopt -o "hvPCrq" -l "help,version,no-color,no-copy,no-print,no-preview,reflog,inline,quiet" -- "${@}")
 	if [ $? -ne 0 ]; then
 		echo "fatal: Failed to parse command options" >&2
 		print_git_hash_select_help >&2
@@ -135,6 +138,7 @@ git_hash_select()
 		--no-print)      unset should_print; shift;;
 		-C|--no-color)   internal_git_hash_flags="${internal_git_hash_flags} -C"; shift;;
 		-P|--no-preview) internal_git_hash_flags="${internal_git_hash_flags} -P"; shift;;
+		-r|--reflog)     internal_git_hash_flags="${internal_git_hash_flags} -g"; shift;;
 		--inline)        echo_print_flags="${echo_print_flags} -n"; shift;;
 		-q|--quiet)      stderr_file="/dev/null"; internal_git_hash_flags="${internal_git_hash_flags} -q"; shift;;
 		--)              shift; break ;;
