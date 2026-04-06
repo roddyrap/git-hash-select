@@ -4,18 +4,17 @@ GIT_HASH_SELECT_VERSION="Development"
 
 check_dependencies_exist()
 {
-	local stderr_file="${1}"
-	shift 1
-
 	for dependency in "${@}"; do
 		if ! which "${dependency}" > /dev/null 2>&1; then
-			echo "fatal: "${dependency}" is not installed" > "${stderr_file}"
+			echo "fatal: "${dependency}" is not installed" >&2
 			return 1
 		fi
 	done
 }
 
 # Get hashes of previous commits to clipboard. Useful for git commit --fixup.
+# NOTE: Don't override stderr (2) for this method because then fzf will not
+#       function correctly.
 __internal_git_hash__()
 {
 	local OPTIND
@@ -75,20 +74,19 @@ __internal_git_hash__()
 git_hash_select_copy()
 {
 	local chosen_commit_hash="${1}"
-	local stderr_file="${2}"
 
 	if [ "${XDG_SESSION_TYPE}" != "wayland" ]; then
 		if which xclip > /dev/null 2> /dev/null; then
 			echo -n "${chosen_commit_hash}" | xclip -selection clipboard
 		else
-			echo "fatal: command should copy to clipboard but xclip isn't installed" > "${stderr_file}"
+			echo "fatal: command should copy to clipboard but xclip isn't installed" >&2
 			return 1
 		fi
 	else
 		if which wl-copy > /dev/null 2> /dev/null; then
 			echo -n "${chosen_commit_hash}" | wl-copy
 		else
-			echo "fatal: command should copy to clipboard but wl-clipboard isn't installed" > "${stderr_file}"
+			echo "fatal: command should copy to clipboard but wl-clipboard isn't installed" >&2
 			return 1
 		fi
 	fi
@@ -146,7 +144,7 @@ git_hash_select()
 		esac
 	done
 
-	if ! check_dependencies_exist "${stderr_file}" git fzf; then
+	if ! check_dependencies_exist git fzf 2> "${stderr_file}"; then
 		return 1
 	fi
 
@@ -159,7 +157,7 @@ git_hash_select()
 	fi
 
 	if [ -n "${should_copy_clipboard}" ]; then
-		git_hash_select_copy "${chosen_commit_hash}" "${stderr_file}" || return $?
+		git_hash_select_copy "${chosen_commit_hash}" 2> "${stderr_file}" || return $?
 	fi
 }
 
